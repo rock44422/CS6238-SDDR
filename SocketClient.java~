@@ -49,7 +49,7 @@ public class SocketClient
 	{
 		try
 		{
-			KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA","SUN");
+			KeyPairGenerator keyGen = keyPairGenerator.getInstance("RSA","SUN");
 			SecureRandom random = SecureRandom.getInstance("SHA1PRNG","SUN");	
 			keyGen.initialize(1024, random);
 			KeyPair pair = keyGen.generateKeyPair();
