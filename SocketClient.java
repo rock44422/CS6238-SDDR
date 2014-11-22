@@ -49,13 +49,14 @@ public class SocketClient
 	{
 		try
 		{
-			KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA","SUN");
-			SecureRandom random = SecureRandom.getInstance("SHA1PRNG","SUN");	
+			KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+			SecureRandom random = SecureRandom.getInstance("SHA1PRNG");	
 			keyGen.initialize(1024, random);
 			KeyPair pair = keyGen.generateKeyPair();
 			PrivateKey priv = pair.getPrivate();
 			PublicKey pub = pair.getPublic();
-			System.out.println("Your Public Key is"+pub);
+			System.out.println("Your Public Key is "+pub);
+			System.out.println("Your Private Key is "+priv);
 		}
 		catch (Exception e)
 		{
