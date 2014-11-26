@@ -23,9 +23,18 @@ public class SocketClient
 	{
 		System.out.println("Attempting to connect to "+hostname+":"+port);
 		socketClient = new Socket(hostname,port);
+		readResponse();
 		System.out.println("Connection Established");
+		sendSelfInfo();
     	}
-
+    	public void sendSelfInfo() throws IOException
+	{
+    		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
+      		writer.write("Client-1\n");
+		System.out.println("I am Client-1\n");
+       		writer.newLine();
+       		writer.flush();
+    	}
     	public void readResponse() throws IOException
 	{
       		String userInput;
@@ -35,6 +44,7 @@ public class SocketClient
        		while ((userInput = stdIn.readLine()) != null)
 		{
            		System.out.println(userInput);
+			break;
        		}
    	}
     
@@ -133,6 +143,8 @@ public class SocketClient
 			String clientID;
 			do
 			{
+				SocketClient client = new SocketClient ("localhost",9991);
+				client.connect();
 				System.out.println("Menu");
 				System.out.println("1. Connect to server");
 				System.out.println("2. Put a file");

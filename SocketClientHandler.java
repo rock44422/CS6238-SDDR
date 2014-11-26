@@ -4,10 +4,12 @@ import java.util.Date;
 
 public class SocketClientHandler implements Runnable {
 
-  private Socket client;
-
-  public SocketClientHandler(Socket client) {
+	private Socket client;
+	private String client_Name;
+  public SocketClientHandler(Socket client, String client_Name) {
 	this.client = client;
+	this.client_Name = client_Name;
+	System.out.println("Client_Name"+client_Name);
   }
 
   @Override
@@ -29,11 +31,13 @@ public class SocketClientHandler implements Runnable {
 		if(userInput.equals("TIME?")){
 			System.out.println("REQUEST TO SEND TIME RECEIVED. SENDING CURRENT TIME");
 			sendTime();
+			break;
 		}
 		else
 		{
 			System.out.println("File name requested " + userInput);
 			get(userInput);
+			break;
 		}
 	}
 	client.close();
@@ -59,7 +63,7 @@ public class SocketClientHandler implements Runnable {
 			bis = new BufferedInputStream(fis);
 			bis.read(mybytearray,0,mybytearray.length);
 			os = client.getOutputStream();
-			System.out.println("Sending" + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
+			System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
 			os.write(mybytearray,0,mybytearray.length);
 			os.flush();
 			System.out.println("Done. ");
