@@ -53,16 +53,27 @@ public class SocketClient
 			SecureRandom random = SecureRandom.getInstance("SHA1PRNG");	
 			keyGen.initialize(1024, random);
 			KeyPair pair = keyGen.generateKeyPair();
-			RSAPrivateKey priv = (RSAPrivateKey) pair.getPrivate();
-			RSAPublicKey pub = (RSAPublicKey) pair.getPublic();
-			System.out.println("Your Public Key is "+pub.getModulus());
-			System.out.println("Your Private Key is "+priv.getModulus());
+			PrivateKey priv = pair.getPrivate();
+			PublicKey pub = pair.getPublic();
+			System.out.println("Your Public Key is "+pub);
+			System.out.println("Your Private Key is "+priv);
 		}
 		catch (Exception e)
 		{
             		System.err.println("Caught exception " + e.toString());
 			e.printStackTrace();
         	}
+	}
+	public void gen_Certificate()
+	{
+		CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+
+    FileInputStream fis = new FileInputStream(args[0]);
+
+    Certificate cert = certFactory.generateCertificate(fis);
+    fis.close();
+
+    System.out.println(cert);
 	}
    	public static void main(String arg[])
 	{

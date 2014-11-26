@@ -64,6 +64,14 @@ public class SocketClient
 			e.printStackTrace();
         	}
 	}
+	public void gen_Certificate()
+	{
+		CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+		FileInputStream fis = new FileInputStream(args[0]);
+		Certificate cert = certFactory.generateCertificate(fis);
+		fis.close();
+		System.out.println(cert);
+	}
    	public static void main(String arg[])
 	{
 	        //Creating a SocketClient object

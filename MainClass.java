@@ -8,7 +8,7 @@ public class MainClass {
 
     CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 
-    FileInputStream fis = new FileInputStream("a.dat");
+    FileInputStream fis = new FileInputStream(args[0]);
 
     Certificate cert = certFactory.generateCertificate(fis);
     fis.close();
