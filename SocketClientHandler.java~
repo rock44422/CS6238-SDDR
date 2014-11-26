@@ -36,7 +36,6 @@ public class SocketClientHandler implements Runnable {
 			get(userInput);
 		}
 	}
-	client.close();
 	}
 	
     private void sendTime() throws IOException, InterruptedException {
