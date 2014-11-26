@@ -74,7 +74,7 @@ public class SocketClient
 		System.out.println(cert);
 	}*/
 
-	public void get(String FILE_TO_RECEIVE) throws IOException
+	public void getFile(String FILE_TO_RECEIVE) throws IOException
 	{
 		int bytesRead;
 		
@@ -90,23 +90,15 @@ public class SocketClient
 	       		writer.flush();
 			InputStream is = socketClient.getInputStream();
 			fos = new FileOutputStream(FILE_TO_RECEIVE);
-			System.out.println("Waiting");
 			bos = new BufferedOutputStream(fos);
-			System.out.println("Waiting");
 			bytesRead = is.read(mybytearray, 0 , mybytearray.length);
-			System.out.println(bytesRead);
-			System.out.println("Waiting");
 			current = bytesRead;
-			System.out.println(current);
-			System.out.println("Waiting");
 			do
 			{
-						System.out.println("Waiting");
 				bytesRead = is.read(mybytearray, current, (mybytearray.length-current));
 				System.out.println(bytesRead);
 				if(bytesRead>=0)
 				{
-					System.out.println("Waiting");
 					current += bytesRead;
 				}
 			}while(bytesRead>-1);
@@ -121,23 +113,86 @@ public class SocketClient
 			if(socketClient != null) socketClient.close();
 		}
 	}
+	public void putFile(String fileUID)
+	{
+	}
+	public void delegate(String clientID)
+	{
+	}
+	public void endSession()
+	{
+	}
    	public static void main(String args[])
 	{
 	        //Creating a SocketClient object
-        	SocketClient client = new SocketClient ("localhost",9991);
+
         	try
 		{
+			BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
+			int option;
+			String choice;
+			String fileUID;
+			String clientID;
+			SocketClient client = new SocketClient ("localhost",9991);
+			client.connect();
+			do
+			{
+				System.out.println("Menu");
+				System.out.println("1. Connect to server");
+				System.out.println("2. Put a file");
+				System.out.println("3. Get a file");
+				System.out.println("4. Delegate role");
+				System.out.println("5. Terminate session");
+				System.out.println("6. Ask for Time");
+				System.out.println("Enter option");
+				option = Integer.parseInt(input.readLine());
+			
+				switch(option)
+				{
+				case 1:	//Connect to server
+
+					break;
+				
+				case 2:	//Put a file
+					System.out.print("Enter filename: ");
+					fileUID = input.readLine();
+					client.putFile(fileUID);
+					break;
+				
+				case 3:	//Get a file
+					System.out.print("Enter filename: ");
+					fileUID = input.readLine();
+					client.getFile(fileUID);
+					break;
+				
+				case 4:	//Delegate role
+					System.out.print("Enter client ID: ");
+					clientID = input.readLine();
+					client.delegate(clientID);
+					break;
+				
+				case 5:	//Terminate session
+					client.endSession();
+					break;
+				case 6: //Ask for Time
+					client.askForTime();
+					client.readResponse();
+					break;
+				
+				default: System.out.println("Invalid option. Retry.");
+				}
+			
+				System.out.print("Do you wish to continue (Y/n)?");
+				choice = input.readLine();
+			}
+			while(choice.equalsIgnoreCase("y"));
 		    	//trying to establish connection to the server
-		    	client.connect();
+
 		    	//asking server for time
 		   	 //client.askForTime();
 		    	//waiting to read response from server
 		    	//client.readResponse();
 			//client.gen_Signature();
-			System.out.println("Do you want to receive a file");
-			Scanner sc = new Scanner(System.in);
-			String S= sc.nextLine();
-			client.get(S);
             
         	} 
 		catch (UnknownHostException e)
