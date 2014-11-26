@@ -90,23 +90,35 @@ public class SocketClient
 	       		writer.flush();
 			InputStream is = socketClient.getInputStream();
 			fos = new FileOutputStream(FILE_TO_RECEIVE);
-			/*bos = new BufferedOutputStream(fos);
+			System.out.println("Waiting");
+			bos = new BufferedOutputStream(fos);
+			System.out.println("Waiting");
 			bytesRead = is.read(mybytearray, 0 , mybytearray.length);
+			System.out.println(bytesRead);
+			System.out.println("Waiting");
 			current = bytesRead;
+			System.out.println(current);
+			System.out.println("Waiting");
 			do
 			{
+						System.out.println("Waiting");
 				bytesRead = is.read(mybytearray, current, (mybytearray.length-current));
-				if(bytesRead>=0) current += bytesRead;
+				System.out.println(bytesRead);
+				if(bytesRead>=0)
+				{
+					System.out.println("Waiting");
+					current += bytesRead;
+				}
 			}while(bytesRead>-1);
 			bos.write(mybytearray,0, current);
 			bos.flush();
-			System.out.println("File" + FILE_TO_RECEIVE + "Download (" + current + "bytes read)");*/
+			System.out.println("File" + FILE_TO_RECEIVE + "Download (" + current + "bytes read)");
 		}
 		finally
 		{
-			//if(fos! = null) fos.close();
-			//if(bos! = null) bos.close();
-			//if(SocketClient! = null) SocketClient.close();
+			if(fos != null) fos.close();
+			if(bos != null) bos.close();
+			if(socketClient != null) socketClient.close();
 		}
 	}
    	public static void main(String args[])

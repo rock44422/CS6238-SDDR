@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.Scanner;
 import java.net.*;
 import java.security.*;
 /**
@@ -11,7 +12,7 @@ public class SocketClient
 	private String hostname;
     	private int port;
     	Socket socketClient;
-
+	public final static int FILE_SIZE = 6022386;
     	public SocketClient(String hostname, int port)
 	{
         this.hostname = hostname;
@@ -45,7 +46,7 @@ public class SocketClient
        		writer.flush();
     	}
 	//Reference from https://docs.oracle.com/javase/tutorial/security/apisign/step2.html
-	public void gen_Signature()
+	/*public void gen_Signature()
 	{
 		try
 		{
@@ -71,8 +72,56 @@ public class SocketClient
 		Certificate cert = certFactory.generateCertificate(fis);
 		fis.close();
 		System.out.println(cert);
+	}*/
+
+	public void get(String FILE_TO_RECEIVE) throws IOException
+	{
+		int bytesRead;
+		
+		int current = 0;
+		FileOutputStream fos = null;
+		BufferedOutputStream bos = null;
+		try
+		{
+			byte [] mybytearray = new byte [FILE_SIZE];
+			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
+      			writer.write(FILE_TO_RECEIVE);
+	       		writer.newLine();
+	       		writer.flush();*/
+			InputStream is = socketClient.getInputStream();
+			fos = new FileOutputStream(FILE_TO_RECEIVE);
+			System.out.println("Waiting");
+			bos = new BufferedOutputStream(fos);
+			System.out.println("Waiting");
+			bytesRead = is.read(mybytearray, 0 , mybytearray.length);
+			System.out.println(bytesRead);
+			System.out.println("Waiting");
+			current = bytesRead;
+			System.out.println(current);
+			System.out.println("Waiting");
+			do
+			{
+						System.out.println("Waiting");
+				bytesRead = is.read(mybytearray, current, (mybytearray.length-current));
+				System.out.println(bytesRead);
+				if(bytesRead>=0)
+				{
+					System.out.println("Waiting");
+					current += bytesRead;
+				}
+			}while(bytesRead>-1);
+			bos.write(mybytearray,0, current);
+			bos.flush();
+			System.out.println("File" + FILE_TO_RECEIVE + "Download (" + current + "bytes read)");
+		}
+		finally
+		{
+			if(fos != null) fos.close();
+			if(bos != null) bos.close();
+			if(socketClient != null) socketClient.close();
+		}
 	}
-   	public static void main(String arg[])
+   	public static void main(String args[])
 	{
 	        //Creating a SocketClient object
         	SocketClient client = new SocketClient ("localhost",9991);
@@ -81,10 +130,14 @@ public class SocketClient
 		    	//trying to establish connection to the server
 		    	client.connect();
 		    	//asking server for time
-		   	 client.askForTime();
+		   	 //client.askForTime();
 		    	//waiting to read response from server
-		    	client.readResponse();
-			client.gen_Signature();
+		    	//client.readResponse();
+			//client.gen_Signature();
+			System.out.println("Do you want to receive a file");
+			Scanner sc = new Scanner(System.in);
+			String S= sc.nextLine();
+			client.get(S);
             
         	} 
 		catch (UnknownHostException e)
