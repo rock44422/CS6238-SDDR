@@ -153,8 +153,16 @@ public class SocketClient
 	public void delegate(String clientID)
 	{
 	}
-	public void endSession()
+
+	public void endSession() throws IOException
 	{
+		OutputStream os = null;
+		System.out.println("Session with Server closed");	
+		os = socketClient.getOutputStream();
+		os.write("CLOSE\n".getBytes());
+		os.flush();
+		socketClient.close();
+		
 	}
    	public static void main(String args[])
 	{
@@ -220,6 +228,7 @@ public class SocketClient
 				choice = input.readLine();
 			}
 			while(choice.equalsIgnoreCase("y"));
+			client.endSession();
 		    	//trying to establish connection to the server
 
 		    	//asking server for time

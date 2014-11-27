@@ -15,7 +15,7 @@ public class SocketClientHandler implements Runnable {
   @Override
   public void run() {
 	System.out.println("Thread started with name:"+Thread.currentThread().getName());
-	while(client.isConnected())
+	while(!client.isClosed())
      try {
 
 	readResponse();
@@ -46,6 +46,12 @@ public class SocketClientHandler implements Runnable {
 			fileUID = stdIn.readLine();
 			System.out.println("File name put " + fileUID);
 			put(fileUID,stdIn);
+			break;
+		}
+		else if(userInput.equals("CLOSE"))
+		{
+			System.out.println("Session close request from:  " + client_Name);
+			client.close();
 			break;
 		}
 	}
