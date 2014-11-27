@@ -31,7 +31,7 @@ public class SocketClient
 	{
     		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
       		writer.write("Client-1\n");
-		System.out.println("I am Client-1\n");
+		System.out.println("Client-1\n");
        		writer.newLine();
        		writer.flush();
     	}
@@ -86,43 +86,62 @@ public class SocketClient
 
 	public void getFile(String FILE_TO_RECEIVE) throws IOException
 	{
-		int bytesRead;
-		
-		int current = 0;
+		String userInput;
 		FileOutputStream fos = null;
-		BufferedOutputStream bos = null;
 		try
 		{
-			byte [] mybytearray = new byte [FILE_SIZE];
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
       			writer.write(FILE_TO_RECEIVE);
 	       		writer.newLine();
 	       		writer.flush();
-			InputStream is = socketClient.getInputStream();
-			bytesRead = is.read(mybytearray, 0 , mybytearray.length);
-			current = bytesRead;
-			do
-			{
-				bytesRead = is.read(mybytearray, current, (mybytearray.length-current));
-				if(bytesRead>=0)
-				{
-					current += bytesRead;
-				}
-			}while(bytesRead>-1);
+      			BufferedReader stdIn = new BufferedReader(new InputStreamReader(socketClient.getInputStream()));
 			fos = new FileOutputStream(FILE_TO_RECEIVE);
-			bos = new BufferedOutputStream(fos);
-			bos.write(mybytearray,0, current);
-			bos.flush();
-			System.out.println("File " + FILE_TO_RECEIVE + " Downloaded (" + current + " bytes read)");
+       			System.out.print("RESPONSE FROM SERVER:");
+       			while ((userInput = stdIn.readLine()) != null && stdIn.read()!=-1)
+			{
+           			System.out.println(userInput);
+				fos.write(userInput.getBytes());
+       			}
+			System.out.println("File " + FILE_TO_RECEIVE + " Downloaded ");
 		}
 		finally
 		{
 			if(fos != null) fos.close();
-			if(bos != null) bos.close();
 		}
 	}
 	public void putFile(String fileUID)
 	{
+		FileInputStream fis = null;
+		BufferedInputStream bis = null;
+		OutputStream os = null;
+		try
+		{
+			File myFile = new File(FILE_TO_SEND);
+			byte [] mybytearray = new byte [(int)myFile.length()];
+			fis = new FileInputStream(myFile);
+			bis = new BufferedInputStream(fis);
+			bis.read(mybytearray,0,mybytearray.length);
+			os = client.getOutputStream();
+			System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
+			os.write(mybytearray,0,mybytearray.length);
+			os.write("\n".getBytes(),0,"\n".getBytes().length);
+			fis.close();
+			os.flush();
+			System.out.println("Done. ");
+		}
+		catch (FileNotFoundException e)
+		{
+		    	byte [] mybytearray = "File Not Found Exception".getBytes();
+		    	os.write(mybytearray,0,mybytearray.length);
+			os.flush();
+		}
+		finally
+		{
+			if (bis != null) bis.close();
+			//if(os != null) os.close();
+
+		}
+	}
 	}
 	public void delegate(String clientID)
 	{
@@ -141,10 +160,10 @@ public class SocketClient
 			String choice;
 			String fileUID;
 			String clientID;
+			SocketClient client = new SocketClient ("localhost",9991);
 			do
 			{
-				SocketClient client = new SocketClient ("localhost",9991);
-				client.connect();
+
 				System.out.println("Menu");
 				System.out.println("1. Connect to server");
 				System.out.println("2. Put a file");
@@ -158,7 +177,7 @@ public class SocketClient
 				switch(option)
 				{
 				case 1:	//Connect to server
-
+					client.connect();
 					break;
 				
 				case 2:	//Put a file

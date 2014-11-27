@@ -9,14 +9,15 @@ public class SocketClientHandler implements Runnable {
   public SocketClientHandler(Socket client, String client_Name) {
 	this.client = client;
 	this.client_Name = client_Name;
-	System.out.println("Client_Name"+client_Name);
+	System.out.println("Client_Name: "+client_Name);
   }
 
   @Override
   public void run() {
-
-     try {
 	System.out.println("Thread started with name:"+Thread.currentThread().getName());
+	while(client.isConnected())
+     try {
+
 	readResponse();
        } catch (IOException e) {
 	 e.printStackTrace();
@@ -40,14 +41,12 @@ public class SocketClientHandler implements Runnable {
 			break;
 		}
 	}
-	client.close();
 	}
 	
     private void sendTime() throws IOException, InterruptedException {
 	BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-	writer.write(new Date().toString());
+	writer.write(new Date().toString()+"\n");
 	writer.flush();
-	writer.close();
 	
     }
 	public void get(String FILE_TO_SEND) throws IOException, InterruptedException, FileNotFoundException
@@ -65,6 +64,8 @@ public class SocketClientHandler implements Runnable {
 			os = client.getOutputStream();
 			System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
 			os.write(mybytearray,0,mybytearray.length);
+			os.write("\n".getBytes(),0,"\n".getBytes().length);
+			fis.close();
 			os.flush();
 			System.out.println("Done. ");
 		}
@@ -77,7 +78,7 @@ public class SocketClientHandler implements Runnable {
 		finally
 		{
 			if (bis != null) bis.close();
-			if(os != null) os.close();
+			//if(os != null) os.close();
 
 		}
 	}
