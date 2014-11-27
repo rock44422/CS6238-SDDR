@@ -91,7 +91,8 @@ public class SocketClient
 		try
 		{
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
-      			writer.write(FILE_TO_RECEIVE);
+      			writer.write("GET\n");
+			writer.write(FILE_TO_RECEIVE);
 	       		writer.newLine();
 	       		writer.flush();
       			BufferedReader stdIn = new BufferedReader(new InputStreamReader(socketClient.getInputStream()));
@@ -101,6 +102,7 @@ public class SocketClient
 			{
            			System.out.println(userInput);
 				fos.write(userInput.getBytes());
+				break;
        			}
 			System.out.println("File " + FILE_TO_RECEIVE + " Downloaded ");
 		}
@@ -109,19 +111,25 @@ public class SocketClient
 			if(fos != null) fos.close();
 		}
 	}
-	public void putFile(String FILE_TO_SEND)
+	public void putFile(String FILE_TO_SEND) throws IOException
 	{
 		FileInputStream fis = null;
 		BufferedInputStream bis = null;
 		OutputStream os = null;
 		try
 		{
+			/*BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
+      			writer.write("PUT\n");
+			writer.write(FILE_TO_SEND);
+	       		writer.newLine();*/
 			File myFile = new File(FILE_TO_SEND);
 			byte [] mybytearray = new byte [(int)myFile.length()];
 			fis = new FileInputStream(myFile);
 			bis = new BufferedInputStream(fis);
 			bis.read(mybytearray,0,mybytearray.length);
-			os = client.getOutputStream();
+			os = socketClient.getOutputStream();
+			os.write("PUT\n".getBytes());
+			os.write((FILE_TO_SEND+"\n").getBytes());
 			System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
 			os.write(mybytearray,0,mybytearray.length);
 			os.write("\n".getBytes(),0,"\n".getBytes().length);
@@ -141,7 +149,6 @@ public class SocketClient
 			//if(os != null) os.close();
 
 		}
-	}
 	}
 	public void delegate(String clientID)
 	{

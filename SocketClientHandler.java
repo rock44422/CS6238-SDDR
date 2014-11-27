@@ -26,7 +26,7 @@ public class SocketClientHandler implements Runnable {
        }
 	}
    private void readResponse() throws IOException, InterruptedException {
-	String userInput;
+	String userInput,fileUID;
 	BufferedReader stdIn = new BufferedReader(new InputStreamReader(client.getInputStream()));
 	while ((userInput = stdIn.readLine()) != null) {
 		if(userInput.equals("TIME?")){
@@ -34,15 +34,43 @@ public class SocketClientHandler implements Runnable {
 			sendTime();
 			break;
 		}
-		else
+		else if(userInput.equals("GET"))
 		{
-			System.out.println("File name requested " + userInput);
-			get(userInput);
+			fileUID = stdIn.readLine();
+			System.out.println("File name requested " + fileUID);
+			get(fileUID);
+			break;
+		}
+		else if(userInput.equals("PUT"))
+		{
+			fileUID = stdIn.readLine();
+			System.out.println("File name put " + fileUID);
+			put(fileUID,stdIn);
 			break;
 		}
 	}
 	}
-	
+	public void put(String FILE_TO_RECEIVE,BufferedReader stdIn) throws IOException
+	{
+		String userInput;
+		FileOutputStream fos = null;
+		try
+		{
+			fos = new FileOutputStream(FILE_TO_RECEIVE);
+       			System.out.print("RESPONSE FROM CLIENT:");
+       			while ((userInput = stdIn.readLine()) != null && stdIn.read()!=-1)
+			{
+           			System.out.println(userInput);
+				fos.write(userInput.getBytes());
+				break;
+       			}
+			System.out.println("File " + FILE_TO_RECEIVE + " Downloaded ");
+		}
+		finally
+		{
+			if(fos != null) fos.close();
+		}
+	}
     private void sendTime() throws IOException, InterruptedException {
 	BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
 	writer.write(new Date().toString()+"\n");
