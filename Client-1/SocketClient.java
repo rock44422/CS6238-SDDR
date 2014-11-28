@@ -98,7 +98,7 @@ public class SocketClient
       			BufferedReader stdIn = new BufferedReader(new InputStreamReader(socketClient.getInputStream()));
 			fos = new FileOutputStream(FILE_TO_RECEIVE);
        			System.out.print("RESPONSE FROM SERVER:");
-       			while ((userInput = stdIn.readLine()) != null && stdIn.read()!=-1)
+       			while ((userInput = stdIn.readLine()) != null)
 			{
            			System.out.println(userInput);
 				fos.write(userInput.getBytes());

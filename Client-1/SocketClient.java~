@@ -228,7 +228,7 @@ public class SocketClient
 				choice = input.readLine();
 			}
 			while(choice.equalsIgnoreCase("y"));
-			client.endSession()
+			client.endSession();
 		    	//trying to establish connection to the server
 
 		    	//asking server for time

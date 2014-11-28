@@ -1,6 +1,6 @@
 import java.io.*;
 import java.net.Socket;
-import java.util.Date;
+import java.util.*;
 
 public class SocketClientHandler implements Runnable {
 
@@ -91,6 +91,51 @@ public class SocketClientHandler implements Runnable {
 		try
 		{
 			File myFile = new File(FILE_TO_SEND);
+			 if (!myFile.exists()) {
+			      System.out.println("File not found.");
+			      return;
+			    }
+			    if (myFile.canRead())
+			      System.out.println("  Readable");
+			    else
+			      System.out.println("  Not Readable");
+
+			    if (myFile.canWrite())
+			      System.out.println("  Writable");
+			    else
+			      System.out.println("  Not Writable");
+			    System.out.println("  Last modified on " + new Date(myFile.lastModified()));
+
+			    long t = Calendar.getInstance().getTimeInMillis();
+			    if (!myFile.setLastModified(t))
+			      System.out.println("Can't set time.");
+
+			    if (!myFile.setReadOnly())
+			      System.out.println("Can't set to read-only.");
+
+			    if (myFile.canRead())
+			      System.out.println("  Readable");
+			    else
+			      System.out.println("  Not Readable");
+
+			    if (myFile.canWrite())
+			      System.out.println("  Writable");
+			    else
+			      System.out.println("  Not Writable");
+			    System.out.println("  Last modified on " + new Date(myFile.lastModified()));
+
+			    if (!myFile.setWritable(false, true))
+			      System.out.println("Can't return to read/write.");
+
+			    if (myFile.canRead())
+			      System.out.println("  Readable");
+			    else
+			      System.out.println("  Not Readable");
+
+			    if (myFile.canWrite())
+			      System.out.println("  Writable");
+			    else
+			      System.out.println("  Not Writable");
 			byte [] mybytearray = new byte [(int)myFile.length()];
 			fis = new FileInputStream(myFile);
 			bis = new BufferedInputStream(fis);
@@ -112,7 +157,7 @@ public class SocketClientHandler implements Runnable {
 		finally
 		{
 			if (bis != null) bis.close();
-			//if(os != null) os.close();
+			if(os != null) os.close();
 
 		}
 	}
