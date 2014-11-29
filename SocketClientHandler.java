@@ -81,17 +81,17 @@ public class SocketClientHandler implements Runnable {
 			Path path = Paths.get("",FILE_TO_RECEIVE);
     			UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
 			UserPrincipal clientN = lookupService.lookupPrincipalByName(client_Name);
-			Files.setOwner(path,clientN);
 			UserDefinedFileAttributeView view = Files.getFileAttributeView(path,UserDefinedFileAttributeView.class);
     			System.out.println("Security Flag requested is "+ Security_Flag);
+			String Flag = "Security_Flag";
+			view.write(Flag, Charset.defaultCharset().encode(Security_Flag));
+			ByteBuffer buffer = ByteBuffer.allocate(view.size(Flag));
+			view.read(Flag, buffer);
+			buffer.flip();
+	 		String value = Charset.defaultCharset().decode(buffer).toString();
+	  		System.out.println(value);
 			if(Security_Flag.equals("Integrity"))
 			{
-				view.write(Security_Flag, Charset.defaultCharset().encode("True"));
-				ByteBuffer buffer = ByteBuffer.allocate(view.size(Security_Flag));
-				view.read(Security_Flag, buffer);
-				buffer.flip();
-	 			String value = Charset.defaultCharset().decode(buffer).toString();
-	  			System.out.println(value);
 				try
 				{
 					String MD5 = MD5Checksum.getMD5Checksum(FILE_TO_RECEIVE);
@@ -109,32 +109,41 @@ public class SocketClientHandler implements Runnable {
 			}
 			if(Security_Flag.equals("Confidentiality"))
 			{
-				view.write(Security_Flag, Charset.defaultCharset().encode("True"));
-				ByteBuffer buffer = ByteBuffer.allocate(view.size(Security_Flag));
-				view.read(Security_Flag, buffer);
-				buffer.flip();
-	 			String value = Charset.defaultCharset().decode(buffer).toString();
-	  			System.out.println(value);
 				Random rnd = new Random();
 				int randomNum = rnd.nextInt(100000)+1000000000;
 				new encryptAndDecrypt().File_Encrypt(randomNum,FILE_TO_RECEIVE);
+				File inFile = new File(FILE_TO_RECEIVE);
+				if (!inFile.delete())
+				{
+					System.out.println("Could not delete file");
+				}
+				File file = new File("Enc_"+FILE_TO_RECEIVE);
+
+				// File (or directory) with new name
+				File file2 = new File(FILE_TO_RECEIVE);
+				if(file2.exists()) throw new java.io.IOException("File with the same name already exists");
+				// Rename file (or directory)
+				boolean success = file.renameTo(file2);
+				if (!success)
+				{
+					// File was not successfully renamed
+				}
+				view.write(Flag, Charset.defaultCharset().encode(Security_Flag));
+				buffer = ByteBuffer.allocate(view.size(Flag));
+				view.read(Flag, buffer);
+				buffer.flip();
+		 		value = Charset.defaultCharset().decode(buffer).toString();
+		  		System.out.println(value);
 				view.write("DES_Key", Charset.defaultCharset().encode(Integer.toString(randomNum)));
 				ByteBuffer Key = ByteBuffer.allocate(view.size("DES_Key"));
 				view.read("DES_Key", Key);
 				Key.flip();
 	 			value = Charset.defaultCharset().decode(Key).toString();
 	  			System.out.println(value);
+
 				
 			}
-			if(Security_Flag.equals("None"))
-			{
-				view.write(Security_Flag, Charset.defaultCharset().encode("False"));
-				ByteBuffer buffer = ByteBuffer.allocate(view.size(Security_Flag));
-				view.read(Security_Flag, buffer);
-				buffer.flip();
-	 			String value = Charset.defaultCharset().decode(buffer).toString();
-	  			System.out.println(value);
-			}
+			Files.setOwner(path,clientN);
 			System.out.println("Owner name set to: "+client_Name);
 		}
 		catch(IOException e)
@@ -162,6 +171,28 @@ public class SocketClientHandler implements Runnable {
 		OutputStream os = null;
 		try
 		{
+			Path path = Paths.get("",FILE_TO_SEND);
+			UserDefinedFileAttributeView view = Files.getFileAttributeView(path,UserDefinedFileAttributeView.class);
+			String Flag= "Security_Flag";
+			ByteBuffer buffer = ByteBuffer.allocate(view.size(Flag));
+			view.read(Flag, buffer);
+			buffer.flip();
+	 		String value = Charset.defaultCharset().decode(buffer).toString();
+	  		System.out.println(value);
+			if(value.equals("Integrity"))
+			{
+				System.out.println("Integrity Flag is set on this File.");
+			}
+			else if(value.equals("Confidentiality"))
+			{
+				System.out.println("Confidentiality Flag is set on this File.");
+				
+			}
+			else if(value.equals("None"))
+			{
+				System.out.println("No Flag is set on this File.");
+				
+			}
 			File myFile = new File(FILE_TO_SEND);
 			 if (!myFile.exists()) {
 			      System.out.println("File not found.");

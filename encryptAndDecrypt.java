@@ -39,8 +39,8 @@ public class encryptAndDecrypt {
 	{
 		try 
 		{
-			FileInputStream fis= new FileInputStream("Enc_"+File);
-			FileOutputStream fos= new FileOutputStream(File);
+			FileInputStream fis= new FileInputStream(File);
+			FileOutputStream fos= new FileOutputStream("Dec_"+File);
 			encryptOrDecrypt(Integer.toString(c),Cipher.DECRYPT_MODE,fis,fos);
 		}
 		catch(Throwable e)
