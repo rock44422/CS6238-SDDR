@@ -77,29 +77,70 @@ public class SocketClientHandler implements Runnable {
 				break;
        			}
 			System.out.println("File " + FILE_TO_RECEIVE + " Downloaded ");
+			fos.close();
 			Path path = Paths.get("",FILE_TO_RECEIVE);
     			UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
 			UserPrincipal clientN = lookupService.lookupPrincipalByName(client_Name);
 			Files.setOwner(path,clientN);
 			UserDefinedFileAttributeView view = Files.getFileAttributeView(path,UserDefinedFileAttributeView.class);
-			view.write(Security_Flag, Charset.defaultCharset().encode("True"));
     			System.out.println("Security Flag requested is "+ Security_Flag);
-			ByteBuffer buffer = ByteBuffer.allocate(view.size(Security_Flag));
-			view.read(Security_Flag, buffer);
-			buffer.flip();
- 			String value = Charset.defaultCharset().decode(buffer).toString();
-  			System.out.println(value);
+			if(Security_Flag.equals("Integrity"))
+			{
+				view.write(Security_Flag, Charset.defaultCharset().encode("True"));
+				ByteBuffer buffer = ByteBuffer.allocate(view.size(Security_Flag));
+				view.read(Security_Flag, buffer);
+				buffer.flip();
+	 			String value = Charset.defaultCharset().decode(buffer).toString();
+	  			System.out.println(value);
+				try
+				{
+					String MD5 = MD5Checksum.getMD5Checksum(FILE_TO_RECEIVE);
+					view.write("MD5", Charset.defaultCharset().encode(MD5));
+					ByteBuffer Key = ByteBuffer.allocate(view.size("MD5"));
+					view.read("MD5", Key);
+					Key.flip();
+		 			value = Charset.defaultCharset().decode(Key).toString();
+		  			System.out.println(value);
+				}
+				catch (Exception e)
+				{
+				        e.printStackTrace();
+       				}
+			}
+			if(Security_Flag.equals("Confidentiality"))
+			{
+				view.write(Security_Flag, Charset.defaultCharset().encode("True"));
+				ByteBuffer buffer = ByteBuffer.allocate(view.size(Security_Flag));
+				view.read(Security_Flag, buffer);
+				buffer.flip();
+	 			String value = Charset.defaultCharset().decode(buffer).toString();
+	  			System.out.println(value);
+				Random rnd = new Random();
+				int randomNum = rnd.nextInt(100000)+1000000000;
+				new encryptAndDecrypt().File_Encrypt(randomNum,FILE_TO_RECEIVE);
+				view.write("DES_Key", Charset.defaultCharset().encode(Integer.toString(randomNum)));
+				ByteBuffer Key = ByteBuffer.allocate(view.size("DES_Key"));
+				view.read("DES_Key", Key);
+				Key.flip();
+	 			value = Charset.defaultCharset().decode(Key).toString();
+	  			System.out.println(value);
+				
+			}
+			if(Security_Flag.equals("None"))
+			{
+				view.write(Security_Flag, Charset.defaultCharset().encode("False"));
+				ByteBuffer buffer = ByteBuffer.allocate(view.size(Security_Flag));
+				view.read(Security_Flag, buffer);
+				buffer.flip();
+	 			String value = Charset.defaultCharset().decode(buffer).toString();
+	  			System.out.println(value);
+			}
 			System.out.println("Owner name set to: "+client_Name);
 		}
 		catch(IOException e)
 			{
 				System.err.println(e);
 			}
-		finally
-		{
-			
-			if(fos != null) fos.close();
-		}
 	}
     private void sendTime() throws IOException, InterruptedException {
 	BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
