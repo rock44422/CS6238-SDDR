@@ -2,6 +2,8 @@ import java.io.*;
 import java.util.Scanner;
 import java.net.*;
 import java.security.*;
+import java.nio.file.*;
+import java.nio.file.attribute.*;
 /**
  * A Simple Socket client that connects to our socket server
  *
@@ -30,7 +32,7 @@ public class SocketClient
     	public void sendSelfInfo() throws IOException
 	{
     		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
-      		writer.write("Client-1\n");
+      		writer.write("client1\n");
 		System.out.println("Client-1\n");
        		writer.newLine();
        		writer.flush();
@@ -98,7 +100,7 @@ public class SocketClient
       			BufferedReader stdIn = new BufferedReader(new InputStreamReader(socketClient.getInputStream()));
 			fos = new FileOutputStream(FILE_TO_RECEIVE);
        			System.out.print("RESPONSE FROM SERVER:");
-       			while ((userInput = stdIn.readLine()) != null && stdIn.read()!=-1)
+       			while ((userInput = stdIn.readLine()) != null)
 			{
            			System.out.println(userInput);
 				fos.write(userInput.getBytes());
@@ -108,10 +110,15 @@ public class SocketClient
 		}
 		finally
 		{
+			Path path = Paths.get("",FILE_TO_RECEIVE);
+    			UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
+			UserPrincipal clientN = lookupService.lookupPrincipalByName("client1");
+			Files.setOwner(path,clientN);
+			System.out.println("Owner name set to: Client 1");
 			if(fos != null) fos.close();
 		}
 	}
-	public void putFile(String FILE_TO_SEND) throws IOException
+	public void putFile(String FILE_TO_SEND, String Security_Flag) throws IOException
 	{
 		FileInputStream fis = null;
 		BufferedInputStream bis = null;
@@ -129,10 +136,11 @@ public class SocketClient
 			bis.read(mybytearray,0,mybytearray.length);
 			os = socketClient.getOutputStream();
 			os.write("PUT\n".getBytes());
-			os.write((FILE_TO_SEND+"\n").getBytes());
+			os.write((FILE_TO_SEND+"\r\n").getBytes());
+			os.write(Security_Flag.getBytes());
+			os.write("\n".getBytes())
 			System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
 			os.write(mybytearray,0,mybytearray.length);
-			os.write("\n".getBytes(),0,"\n".getBytes().length);
 			fis.close();
 			os.flush();
 			System.out.println("Done. ");
@@ -146,7 +154,7 @@ public class SocketClient
 		finally
 		{
 			if (bis != null) bis.close();
-			//if(os != null) os.close();
+			if(os != null) os.close();
 
 		}
 	}
@@ -175,6 +183,7 @@ public class SocketClient
 			String choice;
 			String fileUID;
 			String clientID;
+			String Security_Flag;
 			SocketClient client = new SocketClient ("localhost",9991);
 			do
 			{
@@ -198,7 +207,13 @@ public class SocketClient
 				case 2:	//Put a file
 					System.out.print("Enter filename: ");
 					fileUID = input.readLine();
-					client.putFile(fileUID);
+					System.out.println("Security Flag Menu");
+					System.out.println("1. Confidential");
+					System.out.println("2. Integrity");
+					System.out.println("3. None");
+					System.out.println("Enter Option");
+					Security_Flag = input.readLine();
+					client.putFile(fileUID,Security_Flag);
 					break;
 				
 				case 3:	//Get a file

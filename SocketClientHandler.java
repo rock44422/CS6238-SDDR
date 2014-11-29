@@ -1,6 +1,10 @@
 import java.io.*;
 import java.net.Socket;
 import java.util.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.file.*;
+import java.nio.file.attribute.*;
 
 public class SocketClientHandler implements Runnable {
 
@@ -27,6 +31,7 @@ public class SocketClientHandler implements Runnable {
 	}
    private void readResponse() throws IOException, InterruptedException {
 	String userInput,fileUID;
+	String Security_Flag;
 	BufferedReader stdIn = new BufferedReader(new InputStreamReader(client.getInputStream()));
 	while ((userInput = stdIn.readLine()) != null) {
 		if(userInput.equals("TIME?")){
@@ -45,7 +50,8 @@ public class SocketClientHandler implements Runnable {
 		{
 			fileUID = stdIn.readLine();
 			System.out.println("File name put " + fileUID);
-			put(fileUID,stdIn);
+			Security_Flag = stdIn.readLine();
+			put(fileUID,stdIn,Security_Flag);
 			break;
 		}
 		else if(userInput.equals("CLOSE"))
@@ -56,24 +62,42 @@ public class SocketClientHandler implements Runnable {
 		}
 	}
 	}
-	public void put(String FILE_TO_RECEIVE,BufferedReader stdIn) throws IOException
+	public void put(String FILE_TO_RECEIVE,BufferedReader stdIn, String Security_Flag) throws IOException
 	{
 		String userInput;
 		FileOutputStream fos = null;
 		try
 		{
-			fos = new FileOutputStream(FILE_TO_RECEIVE);
+			fos = new FileOutputStream(""+FILE_TO_RECEIVE);
        			System.out.print("RESPONSE FROM CLIENT:");
-       			while ((userInput = stdIn.readLine()) != null && stdIn.read()!=-1)
+       			while ((userInput = stdIn.readLine()) != null)
 			{
-           			System.out.println(userInput);
+           			//System.out.println(userInput);
 				fos.write(userInput.getBytes());
 				break;
        			}
 			System.out.println("File " + FILE_TO_RECEIVE + " Downloaded ");
+			Path path = Paths.get("",FILE_TO_RECEIVE);
+    			UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
+			UserPrincipal clientN = lookupService.lookupPrincipalByName(client_Name);
+			Files.setOwner(path,clientN);
+			UserDefinedFileAttributeView view = Files.getFileAttributeView(path,UserDefinedFileAttributeView.class);
+			view.write(Security_Flag, Charset.defaultCharset().encode("True"));
+    			System.out.println("Security Flag requested is "+ Security_Flag);
+			ByteBuffer buffer = ByteBuffer.allocate(view.size(Security_Flag));
+			view.read(Security_Flag, buffer);
+			buffer.flip();
+ 			String value = Charset.defaultCharset().decode(buffer).toString();
+  			System.out.println(value);
+			System.out.println("Owner name set to: "+client_Name);
 		}
+		catch(IOException e)
+			{
+				System.err.println(e);
+			}
 		finally
 		{
+			
 			if(fos != null) fos.close();
 		}
 	}
@@ -83,6 +107,13 @@ public class SocketClientHandler implements Runnable {
 	writer.flush();
 	
     }
+	private String getOwner(File f) throws IOException
+	{
+	Path p = Paths.get(f.getAbsolutePath());
+   	UserPrincipal owner = Files.getOwner(p);
+    	return owner.getName();
+	}
+
 	public void get(String FILE_TO_SEND) throws IOException, InterruptedException, FileNotFoundException
 	{
 		FileInputStream fis = null;
@@ -141,12 +172,23 @@ public class SocketClientHandler implements Runnable {
 			bis = new BufferedInputStream(fis);
 			bis.read(mybytearray,0,mybytearray.length);
 			os = client.getOutputStream();
+			if(getOwner(myFile).equals(client_Name))
+			{
 			System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
 			os.write(mybytearray,0,mybytearray.length);
 			os.write("\n".getBytes(),0,"\n".getBytes().length);
+
 			fis.close();
 			os.flush();
 			System.out.println("Done. ");
+			}
+			else
+			{
+				os.write("Permission Denied".getBytes(),0,"Permission Denied".getBytes().length);
+				os.flush();
+				System.out.println("Permssion Denied. ");
+			}
+
 		}
 		catch (FileNotFoundException e)
 		{
