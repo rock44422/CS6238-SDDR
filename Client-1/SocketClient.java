@@ -104,7 +104,7 @@ public class SocketClient
 			{
            			System.out.println(userInput);
 				fos.write(userInput.getBytes());
-				break;
+				fos.write("\n".getBytes());
        			}
 			System.out.println("File " + FILE_TO_RECEIVE + " Downloaded ");
 		}
