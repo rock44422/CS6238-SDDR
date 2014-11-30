@@ -29,6 +29,29 @@ public class SocketClient
 		System.out.println("Connection Established");
 		sendSelfInfo();
     	}
+	public void certExchange()
+	{
+		try
+		{
+		System.out.println("Server certificate requested and Client certificate sent");	
+		String s;
+		Process p = Runtime.getRuntime().exec("openssl verify -verbose -CAfile ../CA/ca.crt  ../cert/server.crt");
+            	BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            	while ((s = br.readLine()) != null)
+		{
+			if(s.equals("../cert/server.crt: OK"))
+			{
+				System.out.println("Server verification successfull");
+			}
+			else
+			{
+				System.out.println("Server verification failed");
+			}
+		}
+	        p.destroy();
+        } catch (Exception e) {e.printStackTrace();}
+
+	}
     	public void sendSelfInfo() throws IOException
 	{
     		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
@@ -197,6 +220,7 @@ public class SocketClient
 				{
 				case 1:	//Connect to server
 					client.connect();
+					client.certExchange();
 					break;
 				
 				case 2:	//Put a file

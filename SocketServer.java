@@ -24,11 +24,33 @@ public class SocketServer {
         	System.out.println("The following client has connected:"+client.getInetAddress().getCanonicalHostName());
         	//A client has connected to this server. Send welcome message
 		askClientInfo(client);
+		certExchange();
             Thread thread = new Thread(new SocketClientHandler(client,readResponse(client)));
             thread.start();
         }     
     }
-    
+    	public void certExchange()
+	{
+		try
+		{
+		System.out.println("Client certificate requested and Server certificate sent");	
+		String s;
+		Process p = Runtime.getRuntime().exec("openssl verify -verbose -CAfile CA/ca.crt  Client-1/Client1.crt");
+            	BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            	while ((s = br.readLine()) != null)
+		{
+			if(s.equals("Client-1/Client1.crt: OK"))
+			{
+				System.out.println("Client verification successfull");
+			}
+			else
+			{
+				System.out.println("Client verification failed");
+			}
+		}
+	        p.destroy();
+       		 } catch (Exception e) {e.printStackTrace();}
+	}
         private void askClientInfo(Socket client) throws IOException, InterruptedException {
 	//ufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
 	//writer.write("Enter your CN");
@@ -50,7 +72,8 @@ public class SocketServer {
 			break;
        		}
 		return userInput;
-   	} 
+   	}
+
     /**
     * Creates a SocketServer object and starts the server.
     *
