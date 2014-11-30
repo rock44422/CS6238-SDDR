@@ -142,7 +142,10 @@ public class SocketClientHandler implements Runnable {
 				
 			}
 			Files.setOwner(path,clientN);
-			System.out.println("Owner name set to: "+client_Name);
+			GroupPrincipal group = lookupService.lookupPrincipalByGroupName(client_Name);
+			File targetFile = new File(FILE_TO_RECEIVE);
+			Files.getFileAttributeView(targetFile.toPath(), PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS).setGroup(group);
+			System.out.println("Owner,Group name set to: "+client_Name);
 		}
 		catch(IOException e)
 			{
@@ -223,14 +226,14 @@ public class SocketClientHandler implements Runnable {
 			      System.out.println("File not found.");
 			      return;
 			    }
-
+			os = client.getOutputStream();
 			if(allow_send==1)
 			{
 				byte [] mybytearray = new byte [(int)myFile.length()];
 				fis = new FileInputStream(myFile);
 				bis = new BufferedInputStream(fis);
 				bis.read(mybytearray,0,mybytearray.length);
-				os = client.getOutputStream();
+
 				if(getOwner(myFile).equals(client_Name))
 				{
 					System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
