@@ -108,14 +108,9 @@ public class SocketClient
        			}
 			System.out.println("File " + FILE_TO_RECEIVE + " Downloaded ");
 		}
-		finally
+		catch(Exception e)
 		{
-			Path path = Paths.get("",FILE_TO_RECEIVE);
-    			UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
-			UserPrincipal clientN = lookupService.lookupPrincipalByName("client1");
-			Files.setOwner(path,clientN);
-			System.out.println("Owner name set to: Client 1");
-			if(fos != null) fos.close();
+			e.printStackTrace();
 		}
 	}
 	public void putFile(String FILE_TO_SEND, String Security_Flag) throws IOException

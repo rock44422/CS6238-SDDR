@@ -74,7 +74,7 @@ public class SocketClientHandler implements Runnable {
 			{
            			//System.out.println(userInput);
 				fos.write(userInput.getBytes());
-				break;
+				fos.write("\n".getBytes());
        			}
 			System.out.println("File " + FILE_TO_RECEIVE + " Downloaded ");
 			fos.close();
@@ -89,7 +89,6 @@ public class SocketClientHandler implements Runnable {
 			view.read(Flag, buffer);
 			buffer.flip();
 	 		String value = Charset.defaultCharset().decode(buffer).toString();
-	  		System.out.println(value);
 			if(Security_Flag.equals("Integrity"))
 			{
 				try
@@ -139,7 +138,6 @@ public class SocketClientHandler implements Runnable {
 				view.read("DES_Key", Key);
 				Key.flip();
 	 			value = Charset.defaultCharset().decode(Key).toString();
-	  			System.out.println(value);
 
 				
 			}
@@ -169,6 +167,7 @@ public class SocketClientHandler implements Runnable {
 		FileInputStream fis = null;
 		BufferedInputStream bis = null;
 		OutputStream os = null;
+		int allow_send=0;
 		try
 		{
 			Path path = Paths.get("",FILE_TO_SEND);
@@ -182,15 +181,41 @@ public class SocketClientHandler implements Runnable {
 			if(value.equals("Integrity"))
 			{
 				System.out.println("Integrity Flag is set on this File.");
+				Flag= "MD5";
+				buffer = ByteBuffer.allocate(view.size(Flag));
+				view.read(Flag, buffer);
+				buffer.flip();
+		 		value = Charset.defaultCharset().decode(buffer).toString();
+		  		System.out.println(value);
+				try
+				{
+					String MD5 = MD5Checksum.getMD5Checksum(FILE_TO_SEND);
+					if(MD5.equals(value))
+					{
+						allow_send=1;
+					}
+				}
+				catch (Exception e)
+				{
+				        e.printStackTrace();
+       				}
 			}
 			else if(value.equals("Confidentiality"))
 			{
 				System.out.println("Confidentiality Flag is set on this File.");
+				Flag= "DES_Key";
+				buffer = ByteBuffer.allocate(view.size(Flag));
+				view.read(Flag, buffer);
+				buffer.flip();
+		 		value = Charset.defaultCharset().decode(buffer).toString();
+		  		System.out.println(value);
+				
 				
 			}
 			else if(value.equals("None"))
 			{
 				System.out.println("No Flag is set on this File.");
+				allow_send=1;
 				
 			}
 			File myFile = new File(FILE_TO_SEND);
@@ -198,67 +223,36 @@ public class SocketClientHandler implements Runnable {
 			      System.out.println("File not found.");
 			      return;
 			    }
-			    if (myFile.canRead())
-			      System.out.println("  Readable");
-			    else
-			      System.out.println("  Not Readable");
 
-			    if (myFile.canWrite())
-			      System.out.println("  Writable");
-			    else
-			      System.out.println("  Not Writable");
-			    System.out.println("  Last modified on " + new Date(myFile.lastModified()));
-
-			    long t = Calendar.getInstance().getTimeInMillis();
-			    if (!myFile.setLastModified(t))
-			      System.out.println("Can't set time.");
-
-			    if (!myFile.setReadOnly())
-			      System.out.println("Can't set to read-only.");
-
-			    if (myFile.canRead())
-			      System.out.println("  Readable");
-			    else
-			      System.out.println("  Not Readable");
-
-			    if (myFile.canWrite())
-			      System.out.println("  Writable");
-			    else
-			      System.out.println("  Not Writable");
-			    System.out.println("  Last modified on " + new Date(myFile.lastModified()));
-
-			    if (!myFile.setWritable(false, true))
-			      System.out.println("Can't return to read/write.");
-
-			    if (myFile.canRead())
-			      System.out.println("  Readable");
-			    else
-			      System.out.println("  Not Readable");
-
-			    if (myFile.canWrite())
-			      System.out.println("  Writable");
-			    else
-			      System.out.println("  Not Writable");
-			byte [] mybytearray = new byte [(int)myFile.length()];
-			fis = new FileInputStream(myFile);
-			bis = new BufferedInputStream(fis);
-			bis.read(mybytearray,0,mybytearray.length);
-			os = client.getOutputStream();
-			if(getOwner(myFile).equals(client_Name))
+			if(allow_send==1)
 			{
-			System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
-			os.write(mybytearray,0,mybytearray.length);
-			os.write("\n".getBytes(),0,"\n".getBytes().length);
+				byte [] mybytearray = new byte [(int)myFile.length()];
+				fis = new FileInputStream(myFile);
+				bis = new BufferedInputStream(fis);
+				bis.read(mybytearray,0,mybytearray.length);
+				os = client.getOutputStream();
+				if(getOwner(myFile).equals(client_Name))
+				{
+					System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
+					os.write(mybytearray,0,mybytearray.length);
+					os.write("\n".getBytes(),0,"\n".getBytes().length);
 
-			fis.close();
-			os.flush();
-			System.out.println("Done. ");
+					fis.close();
+					os.flush();
+					System.out.println("Done. ");
+				}
+				else
+				{
+					os.write("Permission Denied:Not the Owner".getBytes(),0,"Permission Denied:Not the Owner".getBytes().length);
+					os.flush();
+					System.out.println("Permission Denied:Not the Owner");
+				}
 			}
 			else
 			{
-				os.write("Permission Denied".getBytes(),0,"Permission Denied".getBytes().length);
-				os.flush();
-				System.out.println("Permssion Denied. ");
+					os.write("File MD5 Check Problem.".getBytes(),0,"File MD5 Check Problem.".getBytes().length);
+					os.flush();
+					System.out.println("File MD5 Check Problem.");
 			}
 
 		}
@@ -267,6 +261,36 @@ public class SocketClientHandler implements Runnable {
 		    	byte [] mybytearray = "File Not Found Exception".getBytes();
 		    	os.write(mybytearray,0,mybytearray.length);
 			os.flush();
+		}
+		catch(FileSystemException e)
+		{
+			System.out.println("Exception");
+			File myFile = new File(FILE_TO_SEND);
+			 if (!myFile.exists()) {
+			      System.out.println("File not found.");
+			      return;
+			    }
+				byte [] mybytearray = new byte [(int)myFile.length()];
+				fis = new FileInputStream(myFile);
+				bis = new BufferedInputStream(fis);
+				bis.read(mybytearray,0,mybytearray.length);
+				os = client.getOutputStream();
+				if(getOwner(myFile).equals(client_Name))
+				{
+					System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
+					os.write(mybytearray,0,mybytearray.length);
+					os.write("\n".getBytes(),0,"\n".getBytes().length);
+
+					fis.close();
+					os.flush();
+					System.out.println("Done. ");
+				}
+				else
+				{
+					os.write("Permission Denied:Not the Owner".getBytes(),0,"Permission Denied:Not the Owner".getBytes().length);
+					os.flush();
+					System.out.println("Permission Denied:Not the Owner");
+				}
 		}
 		finally
 		{
