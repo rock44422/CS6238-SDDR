@@ -212,6 +212,28 @@ public class SocketClientHandler implements Runnable {
 				buffer.flip();
 		 		value = Charset.defaultCharset().decode(buffer).toString();
 		  		System.out.println(value);
+				new encryptAndDecrypt().File_Decrypt(Integer.parseInt(value),FILE_TO_SEND);
+				File file = new File(FILE_TO_SEND);
+				File file2 = new File(FILE_TO_SEND+"_Dec");
+				if(file2.exists()) throw new java.io.IOException("File with the same name already exists");
+				// Rename file (or directory)
+				boolean success = file.renameTo(file2);
+				if (!success)
+				{
+					// File was not successfully renamed
+				}
+				if (!file.delete())
+				{
+					System.out.println("Could not delete file");
+				}
+				File file3 = new File("Dec_"+FILE_TO_SEND);
+				success = file3.renameTo(file);
+				if (!success)
+				{
+					// File was not successfully renamed
+				}
+				//view.write(Flag, Charset.defaultCharset().encode(Security_Flag));
+				allow_send=1;
 				
 				
 			}
@@ -233,7 +255,6 @@ public class SocketClientHandler implements Runnable {
 				fis = new FileInputStream(myFile);
 				bis = new BufferedInputStream(fis);
 				bis.read(mybytearray,0,mybytearray.length);
-
 				if(getOwner(myFile).equals(client_Name))
 				{
 					System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
@@ -269,6 +290,7 @@ public class SocketClientHandler implements Runnable {
 		{
 			System.out.println("Exception");
 			File myFile = new File(FILE_TO_SEND);
+			File myDecFile = new File(FILE_TO_SEND+"_Dec");
 			 if (!myFile.exists()) {
 			      System.out.println("File not found.");
 			      return;
@@ -278,7 +300,7 @@ public class SocketClientHandler implements Runnable {
 				bis = new BufferedInputStream(fis);
 				bis.read(mybytearray,0,mybytearray.length);
 				os = client.getOutputStream();
-				if(getOwner(myFile).equals(client_Name))
+				if(getOwner(myDecFile).equals(client_Name))
 				{
 					System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
 					os.write(mybytearray,0,mybytearray.length);
