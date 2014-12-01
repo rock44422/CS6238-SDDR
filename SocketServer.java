@@ -3,6 +3,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.cert.*;
 import java.security.*;
+import java.security.spec.*;
+import java.security.interfaces.*;
 
 public class SocketServer {
     
@@ -55,8 +57,8 @@ public class SocketServer {
 		FileInputStream fin = new FileInputStream(client_Name+"/"+client_Name+".crt");
 		CertificateFactory f = CertificateFactory.getInstance("X.509");
 		X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
-		PublicKey pk = certificate.getPublicKey();
-		System.out.println(pk);
+		RSAPublicKey pk = (RSAPublicKey)certificate.getPublicKey();
+		System.out.println(pk.getModulus());
        		 } catch (Exception e) {e.printStackTrace();}
 	}
         private void askClientInfo(Socket client) throws IOException, InterruptedException {

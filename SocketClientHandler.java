@@ -5,6 +5,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
+import java.security.spec.*;
+import java.security.interfaces.*;
 
 public class SocketClientHandler implements Runnable {
 

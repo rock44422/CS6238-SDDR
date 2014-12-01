@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
+import java.security.spec.*;
 
 public class SocketClientHandler implements Runnable {
 
@@ -290,7 +291,7 @@ public class SocketClientHandler implements Runnable {
 		{
 			System.out.println("Exception");
 			File myFile = new File(FILE_TO_SEND);
-			File myDecFile = new File(FILE_TO_SEND+"Dec");
+			File myDecFile = new File(FILE_TO_SEND+"_Dec");
 			 if (!myFile.exists()) {
 			      System.out.println("File not found.");
 			      return;
