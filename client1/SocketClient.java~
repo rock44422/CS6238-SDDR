@@ -2,6 +2,9 @@ import java.io.*;
 import java.util.Scanner;
 import java.net.*;
 import java.security.*;
+import java.nio.file.*;
+import java.nio.file.attribute.*;
+java.security.cert.*;
 /**
  * A Simple Socket client that connects to our socket server
  *
@@ -27,11 +30,40 @@ public class SocketClient
 		System.out.println("Connection Established");
 		sendSelfInfo();
     	}
+	public void certExchange()
+	{
+		try
+		{
+		System.out.println("Server certificate requested and Client certificate sent");	
+		String s;
+		Process p = Runtime.getRuntime().exec("openssl verify -verbose -CAfile ../CA/ca.crt  ../cert/server.crt");
+            	BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            	while ((s = br.readLine()) != null)
+		{
+			if(s.equals("../cert/server.crt: OK"))
+			{
+				System.out.println("Server verification successful");
+			}
+			else
+			{
+				System.out.println("Server verification failed");
+				System.exit(0);
+			}
+		}
+	        p.destroy();
+		FileInputStream fin = new FileInputStream("../cert/server.crt");
+		CertificateFactory f = CertificateFactory.getInstance("X.509");
+		X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
+		PublicKey pk = certificate.getPublicKey();
+		System.out.println(pk);
+        } catch (Exception e) {e.printStackTrace();}
+
+	}
     	public void sendSelfInfo() throws IOException
 	{
     		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
-      		writer.write("Client-2\n");
-		System.out.println("Client-2\n");
+      		writer.write("client1\n");
+		System.out.println("Client-1\n");
        		writer.newLine();
        		writer.flush();
     	}
@@ -86,49 +118,84 @@ public class SocketClient
 
 	public void getFile(String FILE_TO_RECEIVE) throws IOException
 	{
-		int bytesRead;
-		
-		int current = 0;
+		String userInput;
 		FileOutputStream fos = null;
-		BufferedOutputStream bos = null;
 		try
 		{
-			byte [] mybytearray = new byte [FILE_SIZE];
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
-      			writer.write(FILE_TO_RECEIVE);
+      			writer.write("GET\n");
+			writer.write(FILE_TO_RECEIVE);
 	       		writer.newLine();
 	       		writer.flush();
-			InputStream is = socketClient.getInputStream();
-			bytesRead = is.read(mybytearray, 0 , mybytearray.length);
-			current = bytesRead;
-			do
-			{
-				bytesRead = is.read(mybytearray, current, (mybytearray.length-current));
-				if(bytesRead>=0)
-				{
-					current += bytesRead;
-				}
-			}while(bytesRead>-1);
+      			BufferedReader stdIn = new BufferedReader(new InputStreamReader(socketClient.getInputStream()));
 			fos = new FileOutputStream(FILE_TO_RECEIVE);
-			bos = new BufferedOutputStream(fos);
-			bos.write(mybytearray,0, current);
-			bos.flush();
-			System.out.println("File " + FILE_TO_RECEIVE + " Downloaded (" + current + " bytes read)");
+       			System.out.print("RESPONSE FROM SERVER:");
+       			while ((userInput = stdIn.readLine()) != null)
+			{
+           			System.out.println(userInput);
+				fos.write(userInput.getBytes());
+				fos.write("\n".getBytes());
+       			}
+			System.out.println("File " + FILE_TO_RECEIVE + " Downloaded ");
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+	public void putFile(String FILE_TO_SEND, String Security_Flag) throws IOException
+	{
+		FileInputStream fis = null;
+		BufferedInputStream bis = null;
+		OutputStream os = null;
+		try
+		{
+			/*BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
+      			writer.write("PUT\n");
+			writer.write(FILE_TO_SEND);
+	       		writer.newLine();*/
+			File myFile = new File(FILE_TO_SEND);
+			byte [] mybytearray = new byte [(int)myFile.length()];
+			fis = new FileInputStream(myFile);
+			bis = new BufferedInputStream(fis);
+			bis.read(mybytearray,0,mybytearray.length);
+			os = socketClient.getOutputStream();
+			os.write("PUT\n".getBytes());
+			os.write((FILE_TO_SEND+"\r\n").getBytes());
+			os.write(Security_Flag.getBytes());
+			os.write("\n".getBytes());
+			System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
+			os.write(mybytearray,0,mybytearray.length);
+			fis.close();
+			os.flush();
+			System.out.println("Done. ");
+		}
+		catch (FileNotFoundException e)
+		{
+		    	byte [] mybytearray = "File Not Found Exception".getBytes();
+		    	os.write(mybytearray,0,mybytearray.length);
+			os.flush();
 		}
 		finally
 		{
-			if(fos != null) fos.close();
-			if(bos != null) bos.close();
+			if (bis != null) bis.close();
+			if(os != null) os.close();
+
 		}
-	}
-	public void putFile(String fileUID)
-	{
 	}
 	public void delegate(String clientID)
 	{
 	}
-	public void endSession()
+
+	public void endSession() throws IOException
 	{
+		OutputStream os = null;
+		System.out.println("Session with Server closed");	
+		os = socketClient.getOutputStream();
+		os.write("CLOSE\n".getBytes());
+		os.flush();
+		socketClient.close();
+		
 	}
    	public static void main(String args[])
 	{
@@ -141,8 +208,8 @@ public class SocketClient
 			String choice;
 			String fileUID;
 			String clientID;
+			String Security_Flag;
 			SocketClient client = new SocketClient ("localhost",9991);
-			client.connect();
 			do
 			{
 
@@ -159,13 +226,20 @@ public class SocketClient
 				switch(option)
 				{
 				case 1:	//Connect to server
-
+					client.connect();
+					client.certExchange();
 					break;
 				
 				case 2:	//Put a file
 					System.out.print("Enter filename: ");
 					fileUID = input.readLine();
-					client.putFile(fileUID);
+					System.out.println("Security Flag Menu");
+					System.out.println("1. Confidential");
+					System.out.println("2. Integrity");
+					System.out.println("3. None");
+					System.out.println("Enter Option");
+					Security_Flag = input.readLine();
+					client.putFile(fileUID,Security_Flag);
 					break;
 				
 				case 3:	//Get a file
@@ -195,6 +269,7 @@ public class SocketClient
 				choice = input.readLine();
 			}
 			while(choice.equalsIgnoreCase("y"));
+			client.endSession();
 		    	//trying to establish connection to the server
 
 		    	//asking server for time

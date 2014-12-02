@@ -4,6 +4,7 @@ import java.net.*;
 import java.security.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
+import java.security.cert.*;
 /**
  * A Simple Socket client that connects to our socket server
  *
@@ -41,22 +42,28 @@ public class SocketClient
 		{
 			if(s.equals("../cert/server.crt: OK"))
 			{
-				System.out.println("Server verification successfull");
+				System.out.println("Server verification successful");
 			}
 			else
 			{
 				System.out.println("Server verification failed");
+				System.exit(0);
 			}
 		}
 	        p.destroy();
+		FileInputStream fin = new FileInputStream("../cert/server.crt");
+		CertificateFactory f = CertificateFactory.getInstance("X.509");
+		X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
+		PublicKey pk = certificate.getPublicKey();
+		System.out.println(pk);
         } catch (Exception e) {e.printStackTrace();}
 
 	}
     	public void sendSelfInfo() throws IOException
 	{
     		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
-      		writer.write("client1\n");
-		System.out.println("Client-1\n");
+      		writer.write("client2\n");
+		System.out.println("Client-2\n");
        		writer.newLine();
        		writer.flush();
     	}

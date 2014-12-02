@@ -4,6 +4,7 @@ import java.net.*;
 import java.security.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
+import java.security.cert.*;
 /**
  * A Simple Socket client that connects to our socket server
  *
@@ -36,35 +37,32 @@ public class SocketClient
 		System.out.println("Server certificate requested and Client certificate sent");	
 		String s;
 		Process p = Runtime.getRuntime().exec("openssl verify -verbose -CAfile ../CA/ca.crt  ../cert/server.crt");
-		InputStream certIs = new FileInputStream("../CA/ca.crt");
-    		CertificateFactory cf = CertificateFactory.getInstance("X.509");
-		   Certificate trust = cf.generateCertificate(certIs);
-		    TrustAnchor anchor = new TrustAnchor((X509Certificate) trust, null);
-		    PKIXParameters params = new PKIXParameters(Collections.singleton(anchor));
-		    params.setRevocationEnabled(false);
-		    CertPathValidator cpv = CertPathValidator.getInstance("PKIX");
-		    PKIXCertPathValidatorResult result = (PKIXCertPathValidatorResult) cpv.validate(cp, params);
-		    System.out.println(result);
             	BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             	while ((s = br.readLine()) != null)
 		{
 			if(s.equals("../cert/server.crt: OK"))
 			{
-				System.out.println("Server verification successfull");
+				System.out.println("Server verification successful");
 			}
 			else
 			{
 				System.out.println("Server verification failed");
+				System.exit(0);
 			}
 		}
 	        p.destroy();
+		FileInputStream fin = new FileInputStream("../cert/server.crt");
+		CertificateFactory f = CertificateFactory.getInstance("X.509");
+		X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
+		PublicKey pk = certificate.getPublicKey();
+		System.out.println(pk);
         } catch (Exception e) {e.printStackTrace();}
 
 	}
     	public void sendSelfInfo() throws IOException
 	{
     		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
-      		writer.write("client1\n");
+      		writer.write("client2\n");
 		System.out.println("Client-1\n");
        		writer.newLine();
        		writer.flush();
