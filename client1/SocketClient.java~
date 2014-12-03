@@ -1,10 +1,12 @@
 import java.io.*;
-import java.util.Scanner;
+import java.util.*;
+import javax.crypto.Cipher;
 import java.net.*;
 import java.security.*;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
-java.security.cert.*;
+import java.security.cert.*;
+import java.security.interfaces.*;
 /**
  * A Simple Socket client that connects to our socket server
  *
@@ -34,29 +36,47 @@ public class SocketClient
 	{
 		try
 		{
-		System.out.println("Server certificate requested and Client certificate sent");	
-		String s;
-		Process p = Runtime.getRuntime().exec("openssl verify -verbose -CAfile ../CA/ca.crt  ../cert/server.crt");
-            	BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            	while ((s = br.readLine()) != null)
+			System.out.println("Server certificate requested and Client certificate sent");	
+			String s;
+			Process p = Runtime.getRuntime().exec("openssl verify -verbose -CAfile ../CA/ca.crt  ../cert/server.crt");
+		    	BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+		    	while ((s = br.readLine()) != null)
+			{
+				if(s.equals("../cert/server.crt: OK"))
+				{
+					System.out.println("Server verification successful");
+				}
+				else
+				{
+					System.out.println("Server verification failed");
+					System.exit(0);
+				}
+			}
+			p.destroy();
+			FileInputStream fin = new FileInputStream("../cert/server.crt");
+			CertificateFactory f = CertificateFactory.getInstance("X.509");
+			X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
+			RSAPublicKey pk = (RSAPublicKey)certificate.getPublicKey();
+			System.out.println(pk.getModulus());
+			System.out.println("The client would now generate a random key");
+			Random rnd = new Random();
+			int randomNum = rnd.nextInt(100000)+1000000000;
+			//reference: http://www.javamex.com/tutorials/cryptography/symmetric.shtml
+			Cipher cipher = Cipher.getInstance("RSA");
+			cipher.init(Cipher.ENCRYPT_MODE, pk);
+			byte[] cipherData = cipher.doFinal("Hello".getBytes());
+			System.out.println(cipherData);
+	    		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
+	      		writer.write(new String(cipherData));
+			writer.write("EOC");
+	       		writer.newLine();
+	       		writer.flush();
+
+       		}
+		catch (Exception e)
 		{
-			if(s.equals("../cert/server.crt: OK"))
-			{
-				System.out.println("Server verification successful");
-			}
-			else
-			{
-				System.out.println("Server verification failed");
-				System.exit(0);
-			}
+			e.printStackTrace();
 		}
-	        p.destroy();
-		FileInputStream fin = new FileInputStream("../cert/server.crt");
-		CertificateFactory f = CertificateFactory.getInstance("X.509");
-		X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
-		PublicKey pk = certificate.getPublicKey();
-		System.out.println(pk);
-        } catch (Exception e) {e.printStackTrace();}
 
 	}
     	public void sendSelfInfo() throws IOException

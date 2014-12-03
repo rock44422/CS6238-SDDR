@@ -5,71 +5,146 @@ import java.security.cert.*;
 import java.security.*;
 import java.security.spec.*;
 import java.security.interfaces.*;
+import java.util.*;
+import sun.misc.BASE64Decoder;;
+import javax.crypto.Cipher;
+import javax.xml.bind.DatatypeConverter;
 
-public class SocketServer {
+public class SocketServer
+{
     
-    private ServerSocket serverSocket;
-    private int port;
+	private ServerSocket serverSocket;
+    	private int port;
+	Socket client = null;
+    	public SocketServer(int port)
+	{
+        	this.port = port;
+    	}
     
-    public SocketServer(int port) {
-        this.port = port;
-    }
-    
-    public void start() throws IOException, InterruptedException {
-        System.out.println("Starting the socket server at port:" + port);
-        serverSocket = new ServerSocket(port);
+    	public void start() throws IOException, InterruptedException
+	{
+		System.out.println("Starting the socket server at port:" + port);
+		serverSocket = new ServerSocket(port);
+		while(true)
+		{
+			System.out.println("Waiting for clients...");
+			client = serverSocket.accept();
+			System.out.println("The following client has connected:"+client);
+			//A client has connected to this server. Send welcome message
+			askClientInfo(client);
+			String client_Name = readResponse(client);
+			certExchange(client_Name);
+		    	Thread thread = new Thread(new SocketClientHandler(client,client_Name));
+		    	thread.start();
+        	}     
+    	}
 
-        Socket client = null;
-        
-        while(true){
-        	System.out.println("Waiting for clients...");
-        	client = serverSocket.accept();
-        	System.out.println("The following client has connected:"+client.getInetAddress().getCanonicalHostName());
-        	//A client has connected to this server. Send welcome message
-		askClientInfo(client);
-		String client_Name = readResponse(client);
-		certExchange(client_Name);
-            Thread thread = new Thread(new SocketClientHandler(client,client_Name));
-            thread.start();
-        }     
-    }
-    	public void certExchange(String client_Name) throws IOException, InterruptedException
+	public void certExchange(String client_Name) throws IOException, InterruptedException
 	{
 		try
 		{
-		System.out.println("Client certificate requested and Server certificate sent");	
-		String s;
-		Process p = Runtime.getRuntime().exec("openssl verify -verbose -CAfile CA/ca.crt " + client_Name+"/"+client_Name+".crt");
-            	BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            	while ((s = br.readLine()) != null)
-		{
-			if(s.equals(client_Name+"/"+client_Name+".crt: OK"))
+			System.out.println("Client certificate requested and Server certificate sent");	
+			String s;
+			Process p = Runtime.getRuntime().exec("openssl verify -verbose -CAfile CA/ca.crt " + client_Name+"/"+client_Name+".crt");
+		    	BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+		    	while ((s = br.readLine()) != null)
 			{
-				System.out.println("Client verification successful");
+				if(s.equals(client_Name+"/"+client_Name+".crt: OK"))
+				{
+					System.out.println("Client verification successful");
+				}
+				else
+				{
+					System.out.println("Client verification failed");
+					System.exit(0);
+				}
 			}
-			else
-			{
-				System.out.println("Client verification failed");
-				System.exit(0);
-			}
+			p.destroy();
+			FileInputStream fin = new FileInputStream(client_Name+"/"+client_Name+".crt");
+			CertificateFactory f = CertificateFactory.getInstance("X.509");
+			X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
+			RSAPublicKey pk = (RSAPublicKey)certificate.getPublicKey();
+			System.out.println(pk.getModulus());
+			System.out.println("The server would now generate a random key");
+			Random rnd = new Random();
+			int randomNum = rnd.nextInt(100000)+1000000000;
+			//reference: http://www.javamex.com/tutorials/cryptography/symmetric.shtml
+			Cipher cipher = Cipher.getInstance("RSA");
+			cipher.init(Cipher.ENCRYPT_MODE, pk);
+			byte[] cipherData = cipher.doFinal("Hello".getBytes());
+			//System.out.println(cipherData);
+			String rnd_Client= readResponse(client);
+			System.out.println(rnd_Client.getBytes());
+			PrivateKey PrivKey = loadPrivateKey("cert/priv.pem");
+			System.out.println((RSAPrivateKey)PrivKey);
+			cipher.init(Cipher.ENCRYPT_MODE, pk);
+			byte[] data = new BASE64Decoder().decodeBuffer(rnd_Client);
+			Cipher rsaCipher = Cipher.getInstance("RSA");
+			rsaCipher.init(Cipher.DECRYPT_MODE, PrivKey);
+			//byte[] plainData = rsaCipher.doFinal(data);
+			//System.out.println(new String(plainData));
 		}
-	        p.destroy();
-		FileInputStream fin = new FileInputStream(client_Name+"/"+client_Name+".crt");
-		CertificateFactory f = CertificateFactory.getInstance("X.509");
-		X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
-		RSAPublicKey pk = (RSAPublicKey)certificate.getPublicKey();
-		System.out.println(pk.getModulus());
-       		 } catch (Exception e) {e.printStackTrace();}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
-        private void askClientInfo(Socket client) throws IOException, InterruptedException {
+public static void closeSilent(final InputStream is)
+{
+	if(is==null) return;
+	try
+	{
+		is.close();
+	}
+	catch(Exception e) {e.printStackTrace();}
+}
+public PrivateKey loadPrivateKey(String fileName) 
+        throws IOException, GeneralSecurityException {
+    PrivateKey key = null;
+    InputStream is = null;
+    try {
+        is = fileName.getClass().getResourceAsStream("/" + fileName);
+        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+        StringBuilder builder = new StringBuilder();
+        boolean inKey = false;
+        for (String line = br.readLine(); line != null; line = br.readLine()) {
+            if (!inKey) {
+                if (line.startsWith("-----BEGIN ") && 
+                        line.endsWith(" PRIVATE KEY-----")) {
+                    inKey = true;
+                }
+                continue;
+            }
+            else {
+                if (line.startsWith("-----END ") && 
+                        line.endsWith(" PRIVATE KEY-----")) {
+                    inKey = false;
+                    break;
+                }
+                builder.append(line);
+            }
+        }
+        //
+        byte[] encoded = DatatypeConverter.parseBase64Binary(builder.toString());
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        key = kf.generatePrivate(keySpec);
+    } finally {
+        closeSilent(is);
+    }
+    return key;
+}
+        private void askClientInfo(Socket client) throws IOException, InterruptedException 
+	{
 	//ufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
 	//writer.write("Enter your CN");
 	//writer.close();
 	OutputStreamWriter writer = new OutputStreamWriter(client.getOutputStream());
 	writer.write("Enter your CN\n",0, "Enter your CN\n".length());
 	writer.flush();
-    }
-    	public String readResponse(Socket client) throws IOException, InterruptedException
+    	}
+    	
+	public String readResponse(Socket client) throws IOException, InterruptedException
 	{
       		String userInput;
        		BufferedReader stdIn = new BufferedReader(new InputStreamReader(client.getInputStream()));
@@ -88,17 +163,21 @@ public class SocketServer {
     *
     * @param args
     */
-    public static void main(String[] args) throws IOException, InterruptedException {
-        // Setting a default port number.
-        int portNumber = 9991;
-        
-        try {
-            // initializing the Socket Server
-            SocketServer socketServer = new SocketServer(portNumber);
-            socketServer.start();
-            
-            } catch (IOException e) {
-            e.printStackTrace();
-        }
+	public static void main(String[] args) throws IOException, InterruptedException
+	{
+		// Setting a default port number.
+		int portNumber = 9991;
+		
+		try
+		{
+		    // initializing the Socket Server
+			SocketServer socketServer = new SocketServer(portNumber);
+			socketServer.start();
+		    
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
     }
 }
