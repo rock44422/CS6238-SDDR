@@ -8,6 +8,7 @@ import java.nio.file.attribute.*;
 import java.security.cert.*;
 import java.security.interfaces.*;
 import java.text.SimpleDateFormat;
+import javax.crypto.CipherInputStream;
 /**
  * A Simple Socket client that connects to our socket server
  *
@@ -33,6 +34,16 @@ public class SocketClient
 		System.out.println("Connection Established");
 		sendSelfInfo();
     	}
+
+public static final byte[] intToByteArray(int value) {
+    return new byte[] {
+            (byte)(value >>> 24),
+            (byte)(value >>> 16),
+            (byte)(value >>> 8),
+            (byte)value};
+}
+
+
 	public void certExchange()
 	{
 		try
@@ -61,19 +72,23 @@ public class SocketClient
 			System.out.println(pk.getModulus());
 			System.out.println("The client would now generate a random key");
 			Random rnd = new Random();
-			int randomNum = rnd.nextInt(100000)+1000000000;
+			int randomNum = rnd.nextInt(1000000000)+1000000000;
 			System.out.println(randomNum);
 			//reference: http://www.javamex.com/tutorials/cryptography/symmetric.shtml
 			Cipher cipher = Cipher.getInstance("RSA");
-			cipher.init(Cipher.ENCRYPT_MODE, pk);
-			byte[] cipherData = cipher.doFinal(Integer.toString(randomNum).getBytes());
-			System.out.println(cipherData);
-	    		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
-	      		writer.write(new String(cipherData));
-	       		writer.newLine();
-			writer.write("EOC");
-	       		writer.newLine();
-	       		writer.flush();
+			cipher.init(Cipher.ENCRYPT_MODE, pk);		
+			InputStream is = new ByteArrayInputStream(intToByteArray(randomNum));
+			CipherInputStream cis = new CipherInputStream(is, cipher);
+
+			//byte[] cipherData = cipher.doFinal(Integer.toString(randomNum).getBytes());
+			//System.out.println(cipherData);
+	    		//BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
+	      		//writer.write(new String(cipherData));
+			doCopy(cis, socketClient.getOutputStream());
+	       		//writer.newLine();
+			//writer.write("EOC");
+	       		//writer.newLine();
+	       		//writer.flush();
 
        		}
 		catch (Exception e)
@@ -82,7 +97,17 @@ public class SocketClient
 		}
 
 	}
+	public static void doCopy(InputStream is, OutputStream os) throws IOException {
+		byte[] bytes = new byte[64];
+		int numBytes;
+		while ((numBytes = is.read(bytes)) != -1) {
+			os.write(bytes, 0, numBytes);
+		}
 
+		os.flush();
+		//os.close();
+		is.close();
+	}
 	public void delegate(String ownerID) throws IOException
 	{
 		
@@ -317,8 +342,11 @@ public class SocketClient
 				switch(option)
 				{
 				case 1:	//Connect to server
+					long startTime = System.nanoTime();    
 					client.connect();
 					client.certExchange();
+					long estimatedTime = System.nanoTime() - startTime;
+					System.out.println(estimatedTime);
 					break;
 				
 				case 2:	//Put a file

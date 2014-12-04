@@ -352,6 +352,7 @@ public class SocketClientHandler implements Runnable
 		  		System.out.println(value);
 				if(getOwner(myFile).equals(client_Name) || !value.isEmpty())
 				{
+
 					System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
 					os.write(mybytearray,0,mybytearray.length);
 					os.write("\n".getBytes(),0,"\n".getBytes().length);
