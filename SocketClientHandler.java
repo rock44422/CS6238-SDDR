@@ -7,7 +7,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.security.spec.*;
 import java.security.interfaces.*;
-
+import java.text.SimpleDateFormat;
 public class SocketClientHandler implements Runnable
 {
 	private Socket client;
@@ -42,6 +42,12 @@ public class SocketClientHandler implements Runnable
    	private void readResponse() throws IOException, InterruptedException
 	{
 		String userInput,fileUID;
+		String ownerID;
+		String clientID;
+		String documentName;
+		String permissions;
+		String delegate;
+		String days;
 		String Security_Flag;
 		BufferedReader stdIn = new BufferedReader(new InputStreamReader(client.getInputStream()));
 		while ((userInput = stdIn.readLine()) != null)
@@ -49,6 +55,19 @@ public class SocketClientHandler implements Runnable
 			if(userInput.equals("TIME?")){
 				System.out.println("REQUEST TO SEND TIME RECEIVED. SENDING CURRENT TIME");
 				sendTime();
+				break;
+			}
+			else if(userInput.equals("PUTPERMISSIONS"))
+			{
+				ownerID = stdIn.readLine();
+				clientID = stdIn.readLine();
+				documentName = stdIn.readLine();
+				permissions = stdIn.readLine();
+				delegate = stdIn.readLine();
+				days = stdIn.readLine();
+				System.out.println(ownerID+" "+clientID+" "+documentName+" "+permissions+" "+delegate+" "+days);
+				System.out.println("File name delegated " + documentName);
+				putPermissions(ownerID, clientID, permissions, delegate, documentName, days, stdIn);	
 				break;
 			}
 			else if(userInput.equals("GET"))
@@ -176,6 +195,63 @@ public class SocketClientHandler implements Runnable
 	   	UserPrincipal owner = Files.getOwner(p);
 	    	return owner.getName();
 	}
+	public void putPermissions(String OwnerID, String ClientID, String permissions, String delegate, String documentName, String days, BufferedReader stdIn) throws IOException
+	{
+		String userInput;
+		FileOutputStream fos = null;
+		try
+		{
+			
+					
+			File f = new File(documentName);
+			//USING THE EXISTING METHOD TO GET OWNER NAME
+			String documentOwner = getOwner(f);
+			
+			//DEFINING A VIEW
+			Path path = Paths.get("",documentName);
+    		UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
+			UserPrincipal clientN = lookupService.lookupPrincipalByName(client_Name);
+			UserDefinedFileAttributeView view = Files.getFileAttributeView(path,UserDefinedFileAttributeView.class);
+			
+
+			view.write("Client Name", Charset.defaultCharset().encode(ClientID));
+			//THE FOLLOWING 4 LINES OF CODE IS TO SEE IF THERE ARE USER DEFINED ATTRIBUTES FOR THIS DOCUMENT WITH KEY "CLIENTID"
+			ByteBuffer buffer = ByteBuffer.allocate(view.size("Client Name"));
+			view.read("Client Name", buffer);
+			buffer.flip();	
+			String value = Charset.defaultCharset().decode(buffer).toString();
+			System.out.println(value);		
+			//THIS IF BLOCK IS TO CHECK IF THE CLIENT (POSSIBLE OWNER OF THAT DOCUMENT) THAT IS INITIALIZING THIS DELEGATION REQUEST 
+			//OWNS THE FILE OR IF THE CLIENT HAS THE PERMISSION TO PROPAGATE THE DELEGATION. SINCE AN EXAMPLE VALUE OF THE KEY-VALUE PAIR IS 
+			//OF THE FORM "KEY : VALUE" WHERE VALUE CAN TAKE AN EXAMPLE FORMAT LIKE "110,Y,10", IT IS SUFFICIENT IF WE JUST CHECK IF THAT
+			//STRING CONTAINS THE CHARACTER "Y" TO CONFIRM THAT THIS CLIENT CAN PROPAGATE DELEGATION
+			try
+			{			
+			SimpleDateFormat sdf = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+			//String dateInString = "31-08-1982 10:20:56";
+			Date date = sdf.parse(days);
+			System.out.println(date);
+			if(documentOwner.equals(OwnerID)){
+				
+				//THIS SETS THE KEY - VALUE PAIR AS "CLIENTID : PERMISSIONS,DELEGATE,DAYS"
+				view.write(ClientID, Charset.defaultCharset().encode(permissions + "," + delegate + "," + date));
+				
+			}
+			else{
+				System.out.println("The delegation requesting client " + ClientID + " was neither the owner of the file nor did it have the rights to propagate the delegaiton.");
+			}
+			
+		}
+		catch(Exception e)
+			{
+				System.err.println(e);
+			}
+		}
+		catch(Exception e)
+			{
+				System.err.println(e);
+			}
+	}
 
 	public void get(String FILE_TO_SEND) throws IOException, InterruptedException, FileNotFoundException
 	{
@@ -249,7 +325,7 @@ public class SocketClientHandler implements Runnable
 				
 				
 			}
-			else if(value.equals("None"))
+			else
 			{
 				System.out.println("No Flag is set on this File.");
 				allow_send=1;
@@ -268,7 +344,13 @@ public class SocketClientHandler implements Runnable
 				fis = new FileInputStream(myFile);
 				bis = new BufferedInputStream(fis);
 				bis.read(mybytearray,0,mybytearray.length);
-				if(getOwner(myFile).equals(client_Name))
+				String Client_Name = client_Name;
+				buffer = ByteBuffer.allocate(view.size(Client_Name));
+				view.read(Client_Name, buffer);
+				buffer.flip();
+		 		value = Charset.defaultCharset().decode(buffer).toString();
+		  		System.out.println(value);
+				if(getOwner(myFile).equals(client_Name) || !value.isEmpty())
 				{
 					System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
 					os.write(mybytearray,0,mybytearray.length);

@@ -7,6 +7,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.security.cert.*;
 import java.security.interfaces.*;
+import java.text.SimpleDateFormat;
 /**
  * A Simple Socket client that connects to our socket server
  *
@@ -61,13 +62,15 @@ public class SocketClient
 			System.out.println("The client would now generate a random key");
 			Random rnd = new Random();
 			int randomNum = rnd.nextInt(100000)+1000000000;
+			System.out.println(randomNum)
 			//reference: http://www.javamex.com/tutorials/cryptography/symmetric.shtml
 			Cipher cipher = Cipher.getInstance("RSA");
 			cipher.init(Cipher.ENCRYPT_MODE, pk);
-			byte[] cipherData = cipher.doFinal("Hello".getBytes());
+			byte[] cipherData = cipher.doFinal(Integer.toString(randomNum).getBytes());
 			System.out.println(cipherData);
 	    		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
 	      		writer.write(new String(cipherData));
+	       		writer.newLine();
 			writer.write("EOC");
 	       		writer.newLine();
 	       		writer.flush();
@@ -79,6 +82,77 @@ public class SocketClient
 		}
 
 	}
+
+	public void delegate(String ownerID) throws IOException
+	{
+		
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		BufferedReader br1 = new BufferedReader(new InputStreamReader(System.in));
+		BufferedReader br2 = new BufferedReader(new InputStreamReader(System.in));
+		BufferedReader br3 = new BufferedReader(new InputStreamReader(System.in));
+		BufferedReader br4 = new BufferedReader(new InputStreamReader(System.in));
+		
+		String OwnerID = ownerID;
+		String clientID;   
+		String documentName;
+		String permissions;
+		String allowFurtherDelegationFlag, days;
+
+		SimpleDateFormat sdf = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+		//String dateInString = "31-08-1982 10:20:56";
+		//Date date = sdf.parse(dateInString);
+		//System.out.println(date); //Tue Aug 31 10:20:56 SGT 1982
+		//FETCHING USER INPUTS
+		System.out.println("Enter the name of the document you want to delegate rights to:\n");
+		documentName = br.readLine();
+		
+		System.out.println("Enter the name // ID of the client you want to delegate rights to:\n");
+		clientID = br1.readLine();
+		
+		System.out.println("Do you want to allow client " + clientID + " to be able to delegate rights to other clients for " + documentName + "? Press Y or N." + "\n");
+		allowFurtherDelegationFlag = br2.readLine();
+
+		System.out.println("Enter the permissions you want to give to " + clientID + " over file " + documentName + ":\n");
+		permissions = br3.readLine();
+		
+		System.out.println("Enter the date till which you want this delegation to exist:\n");
+		days = br4.readLine();
+		
+		//CALLING PUTFILEPERMISSIONS METHOD TO SEND PERMISSIONS TO SERVER
+		putFilePermissions(OwnerID, clientID, permissions, allowFurtherDelegationFlag, documentName, days);
+		
+		
+	}
+
+	public void putFilePermissions(String OwnerID, String ClientID, String permissions, String delegate, String documentName, String days) throws IOException
+	{
+		BufferedInputStream bis = null;
+		OutputStream os = null;
+		try
+		{
+			
+			//WRITING ALL THE ARGUMENTS RECEIVED IN THE METHOD CALL TO THE OUTPUTSTREAM
+			os = socketClient.getOutputStream();
+			os.write("PUTPERMISSIONS\n".getBytes());
+			os.write((OwnerID +"\r\n").getBytes());
+			os.write((ClientID +"\r\n").getBytes());
+			os.write((documentName +"\r\n").getBytes());
+			os.write((permissions +"\r\n").getBytes());
+			os.write((delegate+"\r\n").getBytes());
+			os.write((days+"\r\n").getBytes());
+			os.write("\n".getBytes());
+			System.out.println("Sending request to server from " + OwnerID + " to delegate rights to " + ClientID + " for permissions " + permissions);
+			
+			os.flush();
+			System.out.println("Done. ");
+		}
+		finally
+		{
+			if(os != null) os.close();
+
+		}
+	}
+	
     	public void sendSelfInfo() throws IOException
 	{
     		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
@@ -203,9 +277,6 @@ public class SocketClient
 
 		}
 	}
-	public void delegate(String clientID)
-	{
-	}
 
 	public void endSession() throws IOException
 	{
@@ -269,7 +340,7 @@ public class SocketClient
 					break;
 				
 				case 4:	//Delegate role
-					System.out.print("Enter client ID: ");
+					System.out.print("Enter client ID: \n");
 					clientID = input.readLine();
 					client.delegate(clientID);
 					break;
