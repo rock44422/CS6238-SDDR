@@ -35,6 +35,7 @@ public class SocketServer
 			String client_Name = readResponse(client);
 			certExchange(client_Name);
 		    	Thread thread = new Thread(new SocketClientHandler(client,client_Name));
+			thread.setName(client_Name);
 		    	thread.start();
         	}     
     	}

@@ -6,10 +6,9 @@ import java.security.*;
 import java.security.spec.*;
 import java.security.interfaces.*;
 import java.util.*;
-import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Decoder;;
 import javax.crypto.Cipher;
 import javax.xml.bind.DatatypeConverter;
-import javax.crypto.*;
 
 public class SocketServer
 {
@@ -34,13 +33,13 @@ public class SocketServer
 			//A client has connected to this server. Send welcome message
 			askClientInfo(client);
 			String client_Name = readResponse(client);
-			certExchange(client_Name, client);
+			certExchange(client_Name);
 		    	Thread thread = new Thread(new SocketClientHandler(client,client_Name));
 		    	thread.start();
         	}     
     	}
 
-	public void certExchange(String client_Name, Socket client) throws IOException, InterruptedException
+	public void certExchange(String client_Name) throws IOException, InterruptedException
 	{
 		try
 		{
@@ -74,12 +73,12 @@ public class SocketServer
 			cipher.init(Cipher.ENCRYPT_MODE, pk);
 			byte[] cipherData = cipher.doFinal("Hello".getBytes());
 			//System.out.println(cipherData);
-			//String rnd_Client= readCipher(client);
-			//System.out.println(rnd_Client.getBytes());
+			String rnd_Client= readResponse(client);
+			System.out.println(rnd_Client.getBytes());
 			PrivateKey PrivKey = loadPrivateKey("cert/priv.pem");
 			System.out.println((RSAPrivateKey)PrivKey);
 			cipher.init(Cipher.ENCRYPT_MODE, pk);
-			//byte[] data = new BASE64Decoder().decodeBuffer(rnd_Client);
+			byte[] data = new BASE64Decoder().decodeBuffer(rnd_Client);
 			Cipher rsaCipher = Cipher.getInstance("RSA");
 			rsaCipher.init(Cipher.DECRYPT_MODE, PrivKey);
 			//byte[] plainData = rsaCipher.doFinal(data);
@@ -89,16 +88,6 @@ public class SocketServer
 		{
 			e.printStackTrace();
 		}
-	}
-	public static void doCopy(InputStream is, OutputStream os) throws IOException {
-		byte[] bytes = new byte[64];
-		int numBytes;
-		while ((numBytes = is.read(bytes)) != -1) {
-			os.write(bytes, 0, numBytes);
-		}
-		os.flush();
-		//os.close();
-		is.close();
 	}
 public static void closeSilent(final InputStream is)
 {
@@ -165,19 +154,6 @@ public PrivateKey loadPrivateKey(String fileName)
 		{
            		System.out.println(userInput);
 			break;
-       		}
-		return userInput;
-   	}
-	public String readCipher(Socket client) throws IOException, InterruptedException
-	{
-      		String userInput;
-       		BufferedReader stdIn = new BufferedReader(new InputStreamReader(client.getInputStream()));
-
-       		System.out.print("RESPONSE FROM CLIENT:");
-       		while ((userInput = stdIn.readLine()) != null && !userInput.equals("EOC"))
-		{
-           		System.out.println(userInput);
-			
        		}
 		return userInput;
    	}

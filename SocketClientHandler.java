@@ -349,10 +349,28 @@ public class SocketClientHandler implements Runnable
 				view.read(Client_Name, buffer);
 				buffer.flip();
 		 		value = Charset.defaultCharset().decode(buffer).toString();
-		  		System.out.println(value);
+		  		//System.out.println(value);
 				if(getOwner(myFile).equals(client_Name) || !value.isEmpty())
 				{
+				String[] lines = value.split(",");
 
+				for (String line : lines)
+				{
+					System.out.println(line);
+				}
+					String del_date = lines[2];
+					try{
+					Date date = new SimpleDateFormat("dd-M-yyyy hh:mm:ss", Locale.ENGLISH).parse(del_date);
+					SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//dd/MM/yyyy
+    					Date now = new Date();
+    					String strDate = sdfDate.format(now);
+					System.out.println(date +" "+ sdfDate );
+					
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
 					System.out.println("Sending " + FILE_TO_SEND + "(" + mybytearray.length + "bytes)");
 					os.write(mybytearray,0,mybytearray.length);
 					os.write("\n".getBytes(),0,"\n".getBytes().length);
